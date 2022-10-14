@@ -41,7 +41,7 @@ def get_image_ids(url):
     scroll_height = SCROLL_HEIGHT
     total_img_num = int(total_img_num_element.text)
     if len(elements) < total_img_num:
-        scroll_num = ((total_img_num - len(elements)) // 16) + 2
+        scroll_num = ((total_img_num - len(elements)) // 16) + 8
         logging.info('共计尝试下拉' + str(scroll_num) + '次，加载图片，每次下拉间隔时间：' + str(SLEEP_SECONDS) + '秒\n')
         for i in range(scroll_num):
             logging.info('进行第' + str(i) + '次下拉中...\n')
@@ -50,7 +50,7 @@ def get_image_ids(url):
             logging.info('进行第' + str(i) + '次下拉完成!\n')
         elements = browser.find_elements(By.XPATH, '//article/a')
     image_ids = [ele.get_attribute('href').rsplit('/', 2).__getitem__(1) for ele in elements]
-    logging.info('将要保存的下载ID列表: \n' + ''.join(image_ids))
+    logging.info('将要保存的下载ID列表: \n' + ' '.join(image_ids))
     numpy.save('image_ids', image_ids)
     logging.info("保存图片id数量" + str(len(image_ids)))
     logging.info("尝试关闭浏览器...")
