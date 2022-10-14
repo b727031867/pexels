@@ -1,0 +1,6 @@
+log.txt
+searchIds.txt
+build
+dist
+.idea
+*.spec
