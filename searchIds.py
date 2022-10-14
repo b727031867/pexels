@@ -1,6 +1,7 @@
 import logging
 import time
 import os
+import sys
 
 import multiprocessing as multiprocessing
 import numpy as numpy
@@ -30,7 +31,8 @@ PEXELS_URL = 'https://www.pexels.com/zh-cn/search/' + keyword
 SCROLL_HEIGHT = 20000  # 滚屏像素点
 
 
-def get_image_ids(browser, url):
+def get_image_ids(url):
+    browser = uc.Chrome(browser_executable_path=BROWSER_EXECUTABLE_PATH, driver_executable_path='chromedriver.exe')
     time.sleep(SLEEP_SECONDS)
     browser.get(url)
     browser.maximize_window()
@@ -40,27 +42,36 @@ def get_image_ids(browser, url):
     total_img_num = int(total_img_num_element.text)
     if len(elements) < total_img_num:
         scroll_num = ((total_img_num - len(elements)) // 16) + 2
-        print('共计尝试下拉' + str(scroll_num) + '次，加载图片，每次下拉间隔时间：' + str(SLEEP_SECONDS))
-        for i in range(3):
+        logging.info('共计尝试下拉' + str(scroll_num) + '次，加载图片，每次下拉间隔时间：' + str(SLEEP_SECONDS) + '秒\n')
+        for i in range(scroll_num):
+            logging.info('进行第' + str(i) + '次下拉中...\n')
             browser.execute_script('window.scrollBy(0, {})'.format(scroll_height))  # 利用 selenium 执行 js 滚动到页面底部
             time.sleep(SLEEP_SECONDS)
+            logging.info('进行第' + str(i) + '次下拉完成!\n')
         elements = browser.find_elements(By.XPATH, '//article/a')
     image_ids = [ele.get_attribute('href').rsplit('/', 2).__getitem__(1) for ele in elements]
-    return image_ids
+    logging.info('将要保存的下载ID列表: \n' + ''.join(image_ids))
+    numpy.save('image_ids', image_ids)
+    logging.info("保存图片id数量" + str(len(image_ids)))
+    logging.info("尝试关闭浏览器...")
+    browser.close()
+    logging.info("关闭浏览器成功")
 
 
 def main():
-    browser = uc.Chrome(browser_executable_path=BROWSER_EXECUTABLE_PATH, driver_executable_path='chromedriver.exe')
-    image_ids = get_image_ids(browser, PEXELS_URL)
-    logging.info('To save all image ids: \n'.join(image_ids))
-    numpy.save('image_ids', image_ids)
-    logging.info("保存图片id数量" + str(len(image_ids)))
-    browser.close()
+    get_image_ids(PEXELS_URL)
     return
 
 
 if __name__ == "__main__":
     # 支持Win10 下 具有子线程打包
     multiprocessing.freeze_support()
-    logging.basicConfig(filename='searchIds.log')
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s'
+                        , datefmt='%a, %d %b %Y %H:%M:%S', filename='searchIds.log', filemode='w')
+    # 创建一个handler，用于输出到控制台，并且调整格式
+    ch = logging.StreamHandler()
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+    logger = logging.getLogger()
+    logger.addHandler(ch)
     main()
