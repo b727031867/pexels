@@ -2,6 +2,7 @@ import logging
 import multiprocessing
 import os
 import time
+import traceback
 from urllib.parse import urlparse
 
 import numpy as numpy

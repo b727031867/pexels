@@ -11,7 +11,7 @@ configPath = './config.txt'
 keyword = ''
 if os.path.exists(configPath):
     # 读取配置
-    with open('config.txt', 'r', encoding='utf-8')as filedd:
+    with open('config.txt', 'r', encoding='utf-8') as filedd:
         rr_list = filedd.readlines()
     con = {}
     for line in rr_list:
@@ -38,9 +38,10 @@ def get_image_ids(url):
     total_img_num_element = browser.find_element(By.XPATH, '//*[@id="__next"]/main/div[2]/div[1]/div/a[1]/span')
     elements = browser.find_elements(By.XPATH, '//article/a')
     scroll_height = SCROLL_HEIGHT
-    total_img_num = int(total_img_num_element.text)
+    # 针对不同的搜索情况 需要对页面获取的搜索图片总数文本进行单位转换
+    total_img_num = handle_total_num(total_img_num_element.text)
     if len(elements) < total_img_num:
-        scroll_num = ((total_img_num - len(elements)) // 16) + 8
+        scroll_num = ((total_img_num - len(elements)) // 6) + 8
         logging.info('共计尝试下拉' + str(scroll_num) + '次，加载图片，每次下拉间隔时间：' + str(SLEEP_SECONDS) + '秒\n')
         for i in range(scroll_num):
             logging.info('进行第' + str(i) + '次下拉中...\n')
@@ -55,6 +56,17 @@ def get_image_ids(url):
     logging.info("尝试关闭浏览器...")
     browser.close()
     logging.info("关闭浏览器成功")
+
+
+def handle_total_num(total_pic_number):
+    try:
+        return int(total_pic_number)
+    except ValueError:
+        logging.info('转换单位中')
+        if total_pic_number.rsplit(' ', 1).__getitem__(1) == '千':
+            total_pic_number = float(total_pic_number.rsplit(' ', 1).__getitem__(0)) * 1000
+    logging.info('转换单位后总下载数量是:' + str(int(total_pic_number)) + '\n')
+    return int(total_pic_number)
 
 
 def main():
