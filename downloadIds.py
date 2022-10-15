@@ -23,6 +23,8 @@ if os.path.exists(configPath):
         ll = line.split('=', 1)
         con[ll[0]] = ll[1]
     EVERY_DOWNLOAD_LENGTH_NUM = int(con['EVERY_DOWNLOAD_LENGTH_NUM'])
+    HTTP_PROXY = str(con['HTTP_PROXY'])
+    HTTPS_PROXY = str(con['HTTPS_PROXY'])
 else:
     print("当前文件夹下配置文件不存在")
 logging.basicConfig(
@@ -52,7 +54,11 @@ def download_image(image_url):
         logging.info(f'图片 {image_name} 已存在无需重新下载')
         return None
     try:
-        response = requests.get(image_url, headers=headers)
+        proxies = {
+            'http': HTTP_PROXY,
+            'https': HTTPS_PROXY
+        }
+        response = requests.get(image_url, headers=headers, proxies=proxies)
     except Exception as e:
         print(e)
     if response.status_code != 200:
@@ -98,7 +104,7 @@ def main():
     if len(image_ids) > 0:
         download_ids = image_ids[:EVERY_DOWNLOAD_LENGTH_NUM]
         save_ids = image_ids[EVERY_DOWNLOAD_LENGTH_NUM:]
-        print("下载后剩余图片id数量:" + str(len(save_ids)))
+        print("下载后剩余图片id数量:" + str(len(save_ids)) + '您需要重复执行几次下载，直到剩余图片数量为0表示全部下载完成！')
         download_urls = get_download_urls(download_ids)
         # p = Pool(CPU_COUNT // 2)
         # for url in download_urls:
