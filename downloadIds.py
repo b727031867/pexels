@@ -1,6 +1,7 @@
 import logging
 import multiprocessing
 import os
+import time
 from urllib.parse import urlparse
 
 import numpy as numpy
@@ -15,7 +16,7 @@ CPU_COUNT = os.cpu_count()
 configPath = './config.txt'
 if os.path.exists(configPath):
     # 读取配置
-    with open('config.txt', 'r', encoding='utf-8')as filedd:
+    with open('config.txt', 'r', encoding='utf-8') as filedd:
         rr_list = filedd.readlines()
     con = {}
     for line in rr_list:
@@ -23,10 +24,11 @@ if os.path.exists(configPath):
         ll = line.split('=', 1)
         con[ll[0]] = ll[1]
     EVERY_DOWNLOAD_LENGTH_NUM = int(con['EVERY_DOWNLOAD_LENGTH_NUM'])
+    PAUSE_TIME_MINUTES = int(con['PAUSE_TIME_MINUTES'])
     HTTP_PROXY = str(con['HTTP_PROXY'])
     HTTPS_PROXY = str(con['HTTPS_PROXY'])
 else:
-    print("当前文件夹下配置文件不存在")
+    logging.error("config.txt file not exist!")
 logging.basicConfig(
     filename='log.txt',
     level=logging.INFO,
@@ -43,7 +45,13 @@ EXISTED_IMAGES = set(os.listdir(IMAGE_PATH))
 
 
 def get_download_urls(image_ids):
-    return [DOWNLOAD_URL_KEY.format(image_id=_id) for _id in image_ids]
+    download_urls = []
+    for _id in image_ids:
+        if _id is not None:
+            download_urls.append(DOWNLOAD_URL_KEY.format(image_id=_id))
+        else:
+            logging.warning('get_download_urls , _id is None !')
+    return download_urls
 
 
 def download_image(image_url):
@@ -58,17 +66,20 @@ def download_image(image_url):
             'http': HTTP_PROXY,
             'https': HTTPS_PROXY
         }
-        response = requests.get(image_url, headers=headers, proxies=proxies)
+        if HTTP_PROXY == 'None':
+            response = requests.get(image_url, headers=headers)
+        else:
+            response = requests.get(image_url, headers=headers, proxies=proxies)
     except Exception as e:
-        print(e)
+        logging.error(e)
     if response.status_code != 200:
-        message = '下载 {} 失败. status_code: {}'.format(image_url, response.status_code)
+        message = 'download {} fail. status_code: {}'.format(image_url, response.status_code)
         logging.error(message)
         return None
     prefix = IMAGE_PATH
     with open(prefix + image_name, 'wb') as image:
         image.write(response.content)
-    message = '下载 {} 成功. url: {}'.format(image_name, image_url)
+    message = 'download {} success. url: {}'.format(image_name, image_url)
     logging.info(message)
 
 
@@ -83,40 +94,60 @@ def get_image_url(need_redirect_url):
     """
     response = requests.head(need_redirect_url, headers=headers)
     if response.status_code != 302:
-        message = '{} 没有发生重定向. code: {}'.format(need_redirect_url, response.status_code)
+        message = '{} don\'t have redirect. code: {}'.format(need_redirect_url, response.status_code)
         logging.error(message)
         return None
     location = response.headers.get('location')
-    print(location)
-    logging.info(f'get_image_url success. location: {location}')
+    logging.info(f'get_image_url success. location: {location}' + '\n')
     return location
 
 
 def download(need_redirect_url):
-    image_url = get_image_url(need_redirect_url)
-    if image_url:
-        download_image(image_url)
+    try:
+        image_url = get_image_url(need_redirect_url)
+        if image_url:
+            download_image(image_url)
+        return True
+    except Exception as e:
+        print(e)
+    return False
 
 
 def main():
     image_ids = numpy.load('image_ids.npy', allow_pickle=True)
-    print("当前图片id数量:" + str(len(image_ids)))
+    logging.info("total download id num is:" + str(len(image_ids)))
     if len(image_ids) > 0:
         download_ids = image_ids[:EVERY_DOWNLOAD_LENGTH_NUM]
         save_ids = image_ids[EVERY_DOWNLOAD_LENGTH_NUM:]
-        print("下载后剩余图片id数量:" + str(len(save_ids)) + '您需要重复执行几次下载，直到剩余图片数量为0表示全部下载完成！')
+        logging.info("Number of pictures remaining :" + str(len(save_ids)))
         download_urls = get_download_urls(download_ids)
-        # p = Pool(CPU_COUNT // 2)
-        # for url in download_urls:
-        #     p.apply_async(func=download, args=(url,))
-        #
-        # p.close()
-        # p.join()
+        current_times = 0
         for url in download_urls:
-            download(url)
+            current_times = current_times + 1
+            if current_times % 400 == 0:
+                time.sleep(PAUSE_TIME_MINUTES * 60)
+            for i in range(0, 3):
+                if not download(url):
+                    logging.warning('download fail , will retry 3 times! current retry num is ' + str(i + 1))
+                    time.sleep(3)
+                    download(url)
+                else:
+                    break
         numpy.save('image_ids', save_ids)
+        logging.info('download finished ,remaining  num :' + str(len(numpy.load('image_ids.npy', allow_pickle=True))))
 
 
 if __name__ == "__main__":
     multiprocessing.freeze_support()
+    logging.basicConfig(level=logging.INFO,
+                        format="%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s",
+                        datefmt="%Y-%m-%d %H:%M:%S"
+                        , filename='downloadIds.log', filemode='a')
+    # 创建一个handler，用于输出到控制台，并且调整格式
+    ch = logging.StreamHandler()
+    formatter = logging.Formatter('%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s')
+    ch.setFormatter(formatter)
+    logger = logging.getLogger()
+    logger.addHandler(ch)
+    logging.info('start download pic...')
     main()

@@ -1,9 +1,8 @@
 import logging
-import time
-import os
-import sys
-
 import multiprocessing as multiprocessing
+import os
+import time
+
 import numpy as numpy
 import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
@@ -66,12 +65,15 @@ def main():
 if __name__ == "__main__":
     # 支持Win10 下 具有子线程打包
     multiprocessing.freeze_support()
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s'
-                        , datefmt='%a, %d %b %Y %H:%M:%S', filename='searchIds.log', filemode='w')
+    logging.basicConfig(level=logging.INFO,
+                        format="%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s",
+                        datefmt="%Y-%m-%d %H:%M:%S"
+                        , filename='searchIds.log', filemode='a')
     # 创建一个handler，用于输出到控制台，并且调整格式
     ch = logging.StreamHandler()
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter('%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s')
     ch.setFormatter(formatter)
     logger = logging.getLogger()
     logger.addHandler(ch)
+    logging.info('start search pic Ids...')
     main()
