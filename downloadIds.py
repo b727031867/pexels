@@ -76,6 +76,10 @@ def download_image(image_url):
         message = 'download {} fail. status_code: {}'.format(image_url, response.status_code)
         logging.error(message)
         return None
+    if response.status_code == 429:
+        time.sleep(int(PAUSE_TIME_MINUTES * 60))
+        logging.info('download too many request , program will sleep for' + str(PAUSE_TIME_MINUTES * 60) + ' seconds')
+        return None
     prefix = IMAGE_PATH
     with open(prefix + image_name, 'wb') as image:
         image.write(response.content)
@@ -124,7 +128,7 @@ def main():
         current_times = 0
         for url in download_urls:
             current_times = current_times + 1
-            if current_times % 400 == 0:
+            if current_times % 100 == 0:
                 time.sleep(PAUSE_TIME_MINUTES * 60)
             for i in range(0, 3):
                 if not download(url):
