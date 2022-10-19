@@ -19,6 +19,7 @@ if os.path.exists(configPath):
         ll = line.split('=')
         con[ll[0]] = ll[1]
     SLEEP_SECONDS = int(con['SLEEP_SECONDS'])
+    EACH_LOAD_PIC_NUM = int(con['EACH_LOAD_PIC_NUM'])
     keyword = con['keyword']
     BROWSER_EXECUTABLE_PATH = con['BROWSER_EXECUTABLE_PATH']
 else:
@@ -27,7 +28,7 @@ if len(keyword) == 0:
     print("当前未输入搜索关键字，程序退出！")
     exit(0)
 PEXELS_URL = 'https://www.pexels.com/zh-cn/search/' + keyword
-SCROLL_HEIGHT = 20000  # 滚屏像素点
+SCROLL_HEIGHT = 200000000000  # 滚屏像素点
 
 
 def get_image_ids(url):
@@ -41,7 +42,7 @@ def get_image_ids(url):
     # 针对不同的搜索情况 需要对页面获取的搜索图片总数文本进行单位转换
     total_img_num = handle_total_num(total_img_num_element.text)
     if len(elements) < total_img_num:
-        scroll_num = ((total_img_num - len(elements)) // 6) + 8
+        scroll_num = ((total_img_num - len(elements)) // EACH_LOAD_PIC_NUM) + 3
         logging.info('共计尝试下拉' + str(scroll_num) + '次，加载图片，每次下拉间隔时间：' + str(SLEEP_SECONDS) + '秒\n')
         for i in range(scroll_num):
             logging.info('进行第' + str(i) + '次下拉中...\n')
