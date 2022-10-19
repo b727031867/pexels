@@ -2,7 +2,6 @@ import logging
 import multiprocessing
 import os
 import time
-import traceback
 from urllib.parse import urlparse
 
 import numpy as numpy
@@ -13,37 +12,37 @@ headers = {
     'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 '
                   'Safari/537.36 '
 }
-CPU_COUNT = os.cpu_count()
-configPath = './config.txt'
-if os.path.exists(configPath):
-    # 读取配置
-    with open('config.txt', 'r', encoding='utf-8') as filedd:
-        rr_list = filedd.readlines()
-    con = {}
-    for line in rr_list:
-        line = line.replace('\n', '')
-        ll = line.split('=', 1)
-        con[ll[0]] = ll[1]
-    EVERY_DOWNLOAD_LENGTH_NUM = int(con['EVERY_DOWNLOAD_LENGTH_NUM'])
-    PAUSE_TIME_MINUTES = int(con['PAUSE_TIME_MINUTES'])
-    PER_WAIT_DOWNLOAD_NUM = int(con['PER_WAIT_DOWNLOAD_NUM'])
-    HTTP_PROXY = str(con['HTTP_PROXY'])
-    HTTPS_PROXY = str(con['HTTPS_PROXY'])
-else:
-    logging.error("config.txt file not exist!")
-logging.basicConfig(
-    filename='log.txt',
-    level=logging.INFO,
-    filemode='w+',
-    format='%(levelname)s:%(asctime)s: %(message)s',
-    datefmt='%Y-%d-%m %H:%M:%S'
-)
-# proxy = requests.get(IP_URL).text
-# print(proxy)
+CONFIG_PATH = './config.txt'
 IMAGE_PATH = './images/'
 if not os.path.exists(IMAGE_PATH):
     os.makedirs(IMAGE_PATH)
 EXISTED_IMAGES = set(os.listdir(IMAGE_PATH))
+EVERY_DOWNLOAD_LENGTH_NUM = None
+PAUSE_TIME_MINUTES = 1
+PER_WAIT_DOWNLOAD_NUM = 1
+HTTP_PROXY = None
+HTTPS_PROXY = None
+
+
+def load_config_and_init(config_path):
+    if os.path.exists(config_path):
+        # 读取配置
+        with open('config.txt', 'r', encoding='utf-8') as config_file:
+            rr_list = config_file.readlines()
+        con = {}
+        for line in rr_list:
+            line = line.replace('\n', '')
+            ll = line.split('=', 1)
+            con[ll[0]] = ll[1]
+        global EVERY_DOWNLOAD_LENGTH_NUM, PAUSE_TIME_MINUTES, PER_WAIT_DOWNLOAD_NUM, HTTP_PROXY, HTTPS_PROXY
+        EVERY_DOWNLOAD_LENGTH_NUM = int(con['EVERY_DOWNLOAD_LENGTH_NUM'])
+        PAUSE_TIME_MINUTES = int(con['PAUSE_TIME_MINUTES'])
+        PER_WAIT_DOWNLOAD_NUM = int(con['PER_WAIT_DOWNLOAD_NUM'])
+        HTTP_PROXY = str(con['HTTP_PROXY'])
+        HTTPS_PROXY = str(con['HTTPS_PROXY'])
+    else:
+        logging.error("config.txt file not exist!")
+        exit(-1)
 
 
 def get_download_urls(image_ids):
@@ -56,13 +55,14 @@ def get_download_urls(image_ids):
     return download_urls
 
 
-def download_image(image_url):
+def download_image(image_url, pause_time_minutes):
     parse_result = urlparse(image_url)
     path = parse_result.path
     image_name = path.split('/')[-1]
     if image_name in EXISTED_IMAGES:
         logging.info(f'图片 {image_name} 已存在无需重新下载')
         return None
+    response = None
     try:
         proxies = {
             'http': HTTP_PROXY,
@@ -79,11 +79,11 @@ def download_image(image_url):
         logging.error(message)
         return None
     if response.status_code == 429:
-        time.sleep(int(PAUSE_TIME_MINUTES * 60))
-        logging.info('download too many request , program will sleep for' + str(PAUSE_TIME_MINUTES * 60) + ' seconds')
+        time.sleep(int(pause_time_minutes * 60))
+        logging.info('download too many request , program will sleep for' + str(pause_time_minutes * 60) + ' seconds')
         return None
     prefix = IMAGE_PATH
-    with open(prefix + image_name, 'wb') as image:
+    with open(prefix + str(image_name, encoding='utf-8'), 'wb') as image:
         image.write(response.content)
     message = 'download {} success. url: {}'.format(image_name, image_url)
     logging.info(message)
@@ -108,11 +108,11 @@ def get_image_url(need_redirect_url):
     return location
 
 
-def download(need_redirect_url):
+def download(need_redirect_url, pause_time_minutes):
     try:
         image_url = get_image_url(need_redirect_url)
         if image_url:
-            download_image(image_url)
+            download_image(image_url, pause_time_minutes)
         return True
     except Exception as e:
         print(e)
@@ -120,6 +120,7 @@ def download(need_redirect_url):
 
 
 def main():
+    load_config_and_init(CONFIG_PATH)
     image_ids = numpy.load('image_ids.npy', allow_pickle=True)
     logging.info("total download id num is:" + str(len(image_ids)))
     if len(image_ids) > 0:
@@ -133,10 +134,10 @@ def main():
             if current_times % PER_WAIT_DOWNLOAD_NUM == 0:
                 time.sleep(PAUSE_TIME_MINUTES * 60)
             for i in range(0, 3):
-                if not download(url):
+                if not download(url, PAUSE_TIME_MINUTES):
                     logging.warning('download fail , will retry 3 times! current retry num is ' + str(i + 1))
                     time.sleep(3)
-                    download(url)
+                    download(url, PAUSE_TIME_MINUTES)
                 else:
                     break
         numpy.save('image_ids', save_ids)
@@ -148,7 +149,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO,
                         format="%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s",
                         datefmt="%Y-%m-%d %H:%M:%S"
-                        , filename='downloadIds.log', filemode='a')
+                        , filename='searchIds.log', filemode='a')
     # 创建一个handler，用于输出到控制台，并且调整格式
     ch = logging.StreamHandler()
     formatter = logging.Formatter('%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s')
