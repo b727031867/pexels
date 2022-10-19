@@ -26,6 +26,7 @@ if os.path.exists(configPath):
         con[ll[0]] = ll[1]
     EVERY_DOWNLOAD_LENGTH_NUM = int(con['EVERY_DOWNLOAD_LENGTH_NUM'])
     PAUSE_TIME_MINUTES = int(con['PAUSE_TIME_MINUTES'])
+    PER_WAIT_DOWNLOAD_NUM = int(con['PER_WAIT_DOWNLOAD_NUM'])
     HTTP_PROXY = str(con['HTTP_PROXY'])
     HTTPS_PROXY = str(con['HTTPS_PROXY'])
 else:
@@ -129,7 +130,7 @@ def main():
         current_times = 0
         for url in download_urls:
             current_times = current_times + 1
-            if current_times % 100 == 0:
+            if current_times % PER_WAIT_DOWNLOAD_NUM == 0:
                 time.sleep(PAUSE_TIME_MINUTES * 60)
             for i in range(0, 3):
                 if not download(url):
