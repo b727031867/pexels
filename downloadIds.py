@@ -117,7 +117,7 @@ def download(need_redirect_url, pause_time_minutes):
         image_url = get_image_url(need_redirect_url, pause_time_minutes)
         if image_url:
             download_image(image_url, pause_time_minutes)
-        return True
+            return True
     except Exception as e:
         print(e)
     return False
