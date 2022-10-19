@@ -89,7 +89,7 @@ def download_image(image_url, pause_time_minutes):
     logging.info(message)
 
 
-def get_image_url(need_redirect_url):
+def get_image_url(need_redirect_url, pause_time_minutes):
     """
     因为没法解决反爬， 这里采取其他方式绕过反爬
     1. 利用 selenium 获取到页面上 download 按钮的 url
@@ -99,6 +99,10 @@ def get_image_url(need_redirect_url):
     5. http code 302 返回的 response headers 里面的 location 即为重定向的 url
     """
     response = requests.head(need_redirect_url, headers=headers)
+    if response.status_code == 429:
+        time.sleep(int(pause_time_minutes * 60))
+        logging.info('download too many request , program will sleep for' + str(pause_time_minutes * 60) + ' seconds')
+        return None
     if response.status_code != 302:
         message = '{} don\'t have redirect. code: {}'.format(need_redirect_url, response.status_code)
         logging.error(message)
@@ -110,7 +114,7 @@ def get_image_url(need_redirect_url):
 
 def download(need_redirect_url, pause_time_minutes):
     try:
-        image_url = get_image_url(need_redirect_url)
+        image_url = get_image_url(need_redirect_url, pause_time_minutes)
         if image_url:
             download_image(image_url, pause_time_minutes)
         return True
