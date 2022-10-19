@@ -100,8 +100,8 @@ def get_image_url(need_redirect_url, pause_time_minutes):
     """
     response = requests.head(need_redirect_url, headers=headers)
     if response.status_code == 429:
-        time.sleep(int(pause_time_minutes * 60))
         logging.info('download too many request , program will sleep for' + str(pause_time_minutes * 60) + ' seconds')
+        time.sleep(int(pause_time_minutes * 60))
         return None
     if response.status_code != 302:
         message = '{} don\'t have redirect. code: {}'.format(need_redirect_url, response.status_code)
