@@ -140,7 +140,7 @@ def main():
             for i in range(0, 3):
                 if not download(url, PAUSE_TIME_MINUTES):
                     logging.warning('download fail , will retry 3 times! current retry num is ' + str(i + 1))
-                    time.sleep(PAUSE_TIME_MINUTES)
+                    time.sleep(PAUSE_TIME_MINUTES * 60)
                     download(url, PAUSE_TIME_MINUTES)
                 else:
                     break
