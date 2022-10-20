@@ -100,7 +100,7 @@ def get_image_url(need_redirect_url, pause_time_minutes):
     """
     response = requests.head(need_redirect_url, headers=headers)
     if response.status_code == 429:
-        logging.info('download too many request , program will sleep for' + str(pause_time_minutes * 60) + ' seconds')
+        logging.info('download too many request , program will sleep for ' + str(pause_time_minutes * 60) + ' seconds')
         time.sleep(int(pause_time_minutes * 60))
         return None
     if response.status_code != 302:
@@ -119,7 +119,7 @@ def download(need_redirect_url, pause_time_minutes):
             download_image(image_url, pause_time_minutes)
             return True
     except Exception as e:
-        print(e)
+        logging.error(e)
     return False
 
 
@@ -140,7 +140,7 @@ def main():
             for i in range(0, 3):
                 if not download(url, PAUSE_TIME_MINUTES):
                     logging.warning('download fail , will retry 3 times! current retry num is ' + str(i + 1))
-                    time.sleep(3)
+                    time.sleep(PAUSE_TIME_MINUTES)
                     download(url, PAUSE_TIME_MINUTES)
                 else:
                     break
