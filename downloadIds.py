@@ -105,7 +105,7 @@ def get_image_url(need_redirect_url, pause_time_minutes):
         return None
     if response.status_code == 404:
         logging.info('download url is not exist , program will skip this url : [' + need_redirect_url + ']')
-        return ''
+        return '-1'
     if response.status_code != 302:
         message = '{} don\'t have redirect. code: {}'.format(need_redirect_url, response.status_code)
         logging.error(message)
@@ -120,7 +120,7 @@ def download(need_redirect_url, pause_time_minutes):
         image_url = get_image_url(need_redirect_url, pause_time_minutes)
         if image_url:
             # 如果404 则默认跳过这张图片不下载也不等待
-            if len(image_url) == 0:
+            if image_url == '-1':
                 return True
             download_image(image_url, pause_time_minutes)
             return True
