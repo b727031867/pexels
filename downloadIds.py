@@ -60,7 +60,7 @@ def download_image(image_url, pause_time_minutes):
     path = parse_result.path
     image_name = path.split('/')[-1]
     if image_name in EXISTED_IMAGES:
-        logging.info(f'图片 {image_name} 已存在无需重新下载')
+        logging.info(f'pic {image_name} already download,will skip it.')
         return None
     response = None
     try:
@@ -103,6 +103,9 @@ def get_image_url(need_redirect_url, pause_time_minutes):
         logging.info('download too many request , program will sleep for ' + str(pause_time_minutes * 60) + ' seconds')
         time.sleep(int(pause_time_minutes * 60))
         return None
+    if response.status_code == 404:
+        logging.info('download url is not exist , program will skip this url : [' + need_redirect_url + ']')
+        return ''
     if response.status_code != 302:
         message = '{} don\'t have redirect. code: {}'.format(need_redirect_url, response.status_code)
         logging.error(message)
@@ -116,6 +119,9 @@ def download(need_redirect_url, pause_time_minutes):
     try:
         image_url = get_image_url(need_redirect_url, pause_time_minutes)
         if image_url:
+            # 如果404 则默认跳过这张图片不下载也不等待
+            if len(image_url) == 0:
+                return True
             download_image(image_url, pause_time_minutes)
             return True
     except Exception as e:
@@ -153,7 +159,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO,
                         format="%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s",
                         datefmt="%Y-%m-%d %H:%M:%S"
-                        , filename='searchIds.log', filemode='a')
+                        , filename='downloadIds.log', filemode='w')
     # 创建一个handler，用于输出到控制台，并且调整格式
     ch = logging.StreamHandler()
     formatter = logging.Formatter('%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s')

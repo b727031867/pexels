@@ -81,7 +81,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO,
                         format="%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s",
                         datefmt="%Y-%m-%d %H:%M:%S"
-                        , filename='searchIds.log', filemode='a')
+                        , filename='searchIds.log', filemode='w')
     # 创建一个handler，用于输出到控制台，并且调整格式
     ch = logging.StreamHandler()
     formatter = logging.Formatter('%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s')
