@@ -83,9 +83,10 @@ def download_image(image_url, pause_time_minutes):
         logging.info('download too many request , program will sleep for' + str(pause_time_minutes * 60) + ' seconds')
         return None
     prefix = IMAGE_PATH
-    with open(prefix + str(image_name), 'wb') as image:
+    image_file_name = str(image_name).replace('jpeg', 'jpg')
+    with open(prefix + str(image_file_name), 'wb') as image:
         image.write(response.content)
-    message = 'download {} success. url: {}'.format(image_name, image_url)
+    message = 'download {} success. url: {} , file name : {}'.format(image_name, image_url, image_file_name)
     logging.info(message)
 
 
